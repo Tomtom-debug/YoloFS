@@ -1,0 +1,55 @@
+E2: crash between two staged files during commit
+Run on: UTM VM, Ubuntu 24.04 ARM64, Linux 6.8.0-147-generic, strace 6.8
+Date: October 30, 2026
+Script: e2_commit_crash.sh
+
+----------------------------------------------------------------------
+Terminal output
+----------------------------------------------------------------------
+yolo: unloading kernel module
+yolo: loading kernel module /lib/modules/6.8.0-147-generic/extra/yolofs.ko
+yolo: created ./yolofs.toml
+yolo: created ./.claude/settings.json
+yolo: created ./.claude/yolofs.sh
+yolo: created ./CLAUDE.md
+yolo: not mounted — mounting now (run `yolo unmount` when you're done)
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e2/.yolofs/mnt
+yolo: run `yolo watch` to answer permission prompts
+yolo: snapshot 1
+== journal
+S|/home/stawiah/cc-exp/e2/a.c|1|b:/home/stawiah/cc-exp/e2/a.c
+S|/home/stawiah/cc-exp/e2/b.c|2|b:/home/stawiah/cc-exp/e2/b.c
+P|after sh -c echo "a v2" > a.c && echo "b v2" > b.c
+== store before commit
+.yolofs/inodes/0/1
+.yolofs/inodes/0/2
+== COMMIT, killed before its 2nd rename
+e2_commit_crash.sh: line 11: 59629 Killed                  strace -f -o /tmp/e2.trace -e trace=renameat,renameat2,unlinkat -e inject=renameat,renameat2:signal=SIGKILL:when=2 yolo commit
+commit exit=137
+59632 renameat(AT_FDCWD, "/home/stawiah/cc-exp/e2/.yolofs/inodes/0/1", AT_FDCWD, "/home/stawiah/cc-exp/e2/a.c") = 0
+59632 renameat(AT_FDCWD, "/home/stawiah/cc-exp/e2/.yolofs/inodes/0/2", AT_FDCWD, "/home/stawiah/cc-exp/e2/b.c") = ?
+59632 +++ killed by SIGKILL +++
+-- project:
+a.c: a v2
+b.c: MISSING
+-- store after crash:
+.yolofs/inodes/0/2
+== RESTART: unmount + mount (replays journal)
+yolo: unmounted /home/stawiah/cc-exp/e2/.yolofs/mnt
+yolo: staged changes could not be restored — `yolo review`/`commit`/`abort` work without mounting: ioctl RESTORE: ENOENT: No such file or directory
+mount exit=1
+
+----------------------------------------------------------------------
+Summary
+----------------------------------------------------------------------
+1. a.c is the new version ("a v2"). Store file 1 was moved into the project.
+2. b.c is missing from the project. Before installing a staged file, commit
+   removes the existing file at that path, so the old b.c was deleted and the
+   crash hit before the new one was moved in. The new version is only in
+   store file 2; the old version ("b v1") is gone.
+   Expected beforehand: b.c would still be "b v1". The actual result is worse.
+3. Mounting again fails with ENOENT, because the journal still points a.c to
+   store file 1, which commit had already moved.

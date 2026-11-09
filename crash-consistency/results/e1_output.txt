@@ -1,0 +1,60 @@
+E1: crash inside a rename during commit
+Run on: UTM VM, Ubuntu 24.04 ARM64, Linux 6.8.0-147-generic, strace 6.8
+Date: October 30, 2026
+Script: e1_commit_crash.sh
+
+----------------------------------------------------------------------
+Terminal output
+----------------------------------------------------------------------
+yolo: loading kernel module /lib/modules/6.8.0-147-generic/extra/yolofs.ko
+yolo: created ./yolofs.toml
+yolo: created ./.claude/settings.json
+yolo: created ./.claude/yolofs.sh
+yolo: created ./CLAUDE.md
+yolo: not mounted — mounting now (run `yolo unmount` when you're done)
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e1/.yolofs/mnt
+yolo: run `yolo watch` to answer permission prompts
+yolo: snapshot 1
+== journal
+R|/home/stawiah/cc-exp/e1/new.h|/home/stawiah/cc-exp/e1/old.h|b:/home/stawiah/cc-exp/e1/old.h|a
+S|/home/stawiah/cc-exp/e1/main.c|1|b:/home/stawiah/cc-exp/e1/main.c
+P|after sh -c mv old.h new.h && echo "main v2" > main.c
+== COMMIT, killed before its 2nd rename
+Killed
+commit exit=137
+59489 renameat(AT_FDCWD, "/home/stawiah/cc-exp/e1/old.h", AT_FDCWD, "/home/stawiah/cc-exp/e1/.yolofs/.yolofs-commit-tmp-0") = 0
+59489 renameat(AT_FDCWD, "/home/stawiah/cc-exp/e1/.yolofs/.yolofs-commit-tmp-0", AT_FDCWD, "/home/stawiah/cc-exp/e1/new.h") = ?
+59489 +++ killed by SIGKILL +++
+-- project:
+old.h: MISSING
+new.h: MISSING
+main.c: main v1
+-- temp files:
+-rw-rw-r-- 1 stawiah stawiah   11 Oct 30 12:40 .yolofs-commit-tmp-0
+.yolofs/.yolofs-commit-tmp-0: old header
+== RESTART: unmount + mount (replays journal)
+yolo: unmounted /home/stawiah/cc-exp/e1/.yolofs/mnt
+yolo: staged changes could not be restored — `yolo review`/`commit`/`abort` work without mounting: ioctl RESTORE: ENOENT: No such file or directory
+mount exit=1
+== RETRY COMMIT
+yolo: renaming /home/stawiah/cc-exp/e1/old.h → /home/stawiah/cc-exp/e1/.yolofs/.yolofs-commit-tmp-0: No such file or directory (os error 2)
+retry exit=1
+-- project:
+old.h: MISSING
+new.h: MISSING
+main.c: main v1
+-- temp files:
+
+----------------------------------------------------------------------
+Summary
+----------------------------------------------------------------------
+1. After the crash, old.h and new.h are both missing and main.c is the old
+   version. The only copy of old.h is .yolofs/.yolofs-commit-tmp-0.
+   The project is in neither its old state nor its new state.
+2. Mounting again fails with ENOENT, because the journal still refers to
+   old.h, which commit had already moved.
+3. Retrying commit fails, and the temporary file is gone afterwards. The
+   contents of old.h ("old header") no longer exist anywhere.
