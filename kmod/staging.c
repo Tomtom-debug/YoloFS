@@ -9,6 +9,19 @@
 #include <linux/fs.h>
 #include <linux/file.h>
 #include <linux/namei.h>
+#include <linux/moduleparam.h>
+
+/*
+ * Fault injection for crash consistency experiments. Off by default.
+ *   0  off
+ *   1  E3: in yolo_do_cow(), after the S record is appended, fsync only the
+ *      journal and panic. The record is then on disk while the copied data
+ *      in the store file is not.
+ * Set at runtime with: echo 1 > /sys/module/yolofs/parameters/fi_point
+ */
+static int fi_point;
+module_param(fi_point, int, 0644);
+MODULE_PARM_DESC(fi_point, "crash consistency fault injection point (0 = off)");
 
 /* ── Lower-fs helpers (used only here; version-compat lives in them) ─── */
 
@@ -325,6 +338,12 @@ int yolo_do_cow(struct yolo_sb_info *sbi, struct dentry *dentry,
 	if (err) {
 		path_put(&inode_path);
 		return err;
+	}
+
+	/* Fault injection E3: journal record durable, copied data not. */
+	if (READ_ONCE(fi_point) == 1) {
+		vfs_fsync(sbi->staging.journal_file, 0);
+		panic("yolofs fault injection E3: journal record on disk, store data not");
 	}
 
 	/*

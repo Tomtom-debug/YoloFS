@@ -1,0 +1,25 @@
+yolo: loading kernel module /lib/modules/6.8.0-147-generic/extra/yolofs.ko
+== fi_point after reboot
+0
+== base main.c (the real file)
+line 1 of main.c
+line 2 of main.c
+line 3 of main.c
+size: 51 bytes
+== journal
+S|/home/stawiah/cc-exp/e3/main.c|1|b:/home/stawiah/cc-exp/e3/main.c
+== store files
+-rw-rw-r-- 1 stawiah stawiah 0 Nov  9 23:58 .yolofs/inodes/0/1
+-- .yolofs/inodes/0/1:
+[end]
+== mount (replays the journal)
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e3/.yolofs/mnt
+yolo: restored staged changes from a previous session — `yolo review` to inspect
+yolo: run `yolo watch` to answer permission prompts
+mount exit=0
+== main.c as seen through YoloFS
+yolo: snapshot 1
+[end]

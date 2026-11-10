@@ -1,0 +1,28 @@
+E3 part 3: commit after recovery
+Run on: UTM VM, Ubuntu 24.04 ARM64, Linux 6.8.0-147-generic
+Date: November 9, 2026
+Run right after e3_after_reboot.sh, in the same project (~/cc-exp/e3).
+
+----------------------------------------------------------------------
+Commands
+----------------------------------------------------------------------
+cd ~/cc-exp/e3
+yolo commit; echo "commit exit=$?"
+echo "== real main.c after commit"; cat main.c; echo "size: $(wc -c < main.c) bytes"
+
+----------------------------------------------------------------------
+Terminal output
+----------------------------------------------------------------------
+yolo: committed 1 change
+commit exit=0
+== real main.c after commit
+size: 0 bytes
+
+----------------------------------------------------------------------
+Summary
+----------------------------------------------------------------------
+Before the crash the real main.c held 3 lines (51 bytes). After the crash the
+journal mapped main.c to an empty store file, and recovery reported success.
+Commit then installed that empty store file over the real main.c and also
+reported success. The real file is now 0 bytes, and its original contents are
+gone. No step reported an error.

@@ -1,0 +1,42 @@
+E3 part 1: journal record on disk without its store data (before the crash)
+Run on: UTM VM, Ubuntu 24.04 ARM64, Linux 6.8.0-147-generic
+Date: November 9, 2026
+Script: e3_before_crash.sh
+Module built from this branch with fault injection point fi_point.
+Copied by hand from the terminal, since the panic wipes files written in this run.
+
+----------------------------------------------------------------------
+Terminal output
+----------------------------------------------------------------------
+yolo: unloading kernel module
+yolo: loading kernel module /lib/modules/6.8.0-147-generic/extra/yolofs.ko
+kernel.panic = 10
+yolo: created ./yolofs.toml
+yolo: created ./.claude/settings.json
+yolo: created ./.claude/yolofs.sh
+yolo: created ./CLAUDE.md
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e3/.yolofs/mnt
+yolo: run `yolo watch` to answer permission prompts
+== base main.c
+line 1 of main.c
+line 2 of main.c
+line 3 of main.c
+size: 51 bytes
+== journal before
+== arming fault injection
+1
+== agent appends to main.c (the kernel should panic now)
+Read from remote host 192.168.64.3: Operation timed out
+Connection to 192.168.64.3 closed.
+client_loop: send disconnect: Broken pipe
+
+----------------------------------------------------------------------
+Notes
+----------------------------------------------------------------------
+The journal was empty before the append. The script's last line ("if you can
+read this, the injection did not fire") never printed, and the VM stopped
+responding, consistent with the injected panic. The after-reboot check
+(e3_after_output.txt) confirms the record written just before the panic point.
