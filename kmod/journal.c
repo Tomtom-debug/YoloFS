@@ -85,6 +85,15 @@ static int journal_write(struct yolo_sb_info *sbi, char tag,
 		buf[off++] = (*(fp + 1)) ? '\0' : '\n';
 	}
 
+	/* Fault injection E4: torn S record. Only the first half reaches the
+	 * journal, with no newline, and the system panics. */
+	if (READ_ONCE(yolo_fi_point) == 2 && tag == 'S') {
+		pos = f->f_pos;
+		kernel_write(f, buf, off / 2, &pos);
+		vfs_fsync(f, 0);
+		panic("yolofs fault injection E4: torn journal record");
+	}
+
 	pos = f->f_pos;
 	written = kernel_write(f, buf, off, &pos);
 	kfree(buf);

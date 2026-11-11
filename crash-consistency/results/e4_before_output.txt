@@ -1,0 +1,45 @@
+E4 part 1: torn journal record (before the crash)
+Run on: UTM VM, Ubuntu 24.04 ARM64, Linux 6.8.0-147-generic
+Date: November 11, 2026
+Script: e4_before_crash.sh
+Module built from this branch with fault injection points 1 and 2.
+Copied by hand from the terminal, since the panic wipes files written in this run.
+
+----------------------------------------------------------------------
+Terminal output
+----------------------------------------------------------------------
+yolo: unloading kernel module
+yolo: loading kernel module /lib/modules/6.8.0-147-generic/extra/yolofs.ko
+kernel.panic = 10
+yolo: created ./yolofs.toml
+yolo: created ./.claude/settings.json
+yolo: created ./.claude/yolofs.sh
+yolo: created ./CLAUDE.md
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: run `yolo watch` to answer permission prompts
+== base main.c
+line 1 of main.c
+line 2 of main.c
+line 3 of main.c
+size: 51 bytes
+== journal before
+== arming fault injection
+2
+== agent creates a.txt (the kernel should panic now)
+
+----------------------------------------------------------------------
+Notes
+----------------------------------------------------------------------
+The terminal stopped responding after the last line and the VM restarted.
+The script's last line ("if you can read this, the injection did not fire")
+never printed. The after-reboot check (e4_after_output.txt) shows the torn
+record "S|/home/stawiah/cc" with no newline at the end of the journal.
+
+Follow-up runs in the same project, without another crash:
+  e4_after_output.txt   state after the reboot, first create attempt
+  e4_retry_output.txt   second create attempt after a remount
+  e4_retry2_output.txt  three create attempts within one mount
+  e4_final_output.txt   remount, travel to each snapshot, commit

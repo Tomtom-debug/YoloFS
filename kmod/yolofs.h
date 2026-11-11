@@ -409,6 +409,7 @@ static inline struct vfsmount *yolo_lower_mnt(const struct dentry *d)
 
 /* super.c */
 extern const struct super_operations yolo_sops;
+extern int yolo_fi_point;		/* staging.c: fault injection point, 0 = off */
 extern struct kmem_cache *yolo_inode_cachep;
 
 /* inode.c */

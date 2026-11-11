@@ -1,0 +1,49 @@
+== RESTART
+yolo: unmounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: restored staged changes from a previous session — `yolo review` to inspect
+yolo: run `yolo watch` to answer permission prompts
+mount exit=0
+-- files:
+b.txt
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+== TRAVEL to snapshot 1 (b.txt created by the glued record)
+yolo: traveled to snapshot "after sh -c echo b > b.txt" (0 staged changes)
+travel exit=0
+-- files at snapshot 1:
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+== TRAVEL back to snapshot 2
+yolo: traveled to snapshot "after sh -c echo b > b.txt" (1 staged change)
+travel exit=0
+-- files:
+b.txt
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+== COMMIT
+yolo: committed 1 change
+commit exit=0
+== REAL PROJECT
+total 32
+-rw-rw-r-- 1 stawiah stawiah    2 Nov 11 22:36 b.txt
+-rw-rw-r-- 1 stawiah stawiah 2189 Nov 11 21:52 CLAUDE.md
+-rw-rw-r-- 1 stawiah stawiah   51 Nov 11 21:52 main.c
+-rw-rw-r-- 1 stawiah stawiah 1276 Nov 11 21:52 yolofs.toml
+-- b.txt:
+b
+-- main.c:
+line 1 of main.c
+line 2 of main.c
+line 3 of main.c
+size: 51 bytes
+-- store:

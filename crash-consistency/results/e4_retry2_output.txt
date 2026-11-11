@@ -1,0 +1,28 @@
+== store after commit
+.yolofs/inodes/0/1
+== try 1
+sh: 1: cannot create b.txt: File exists
+yolo: no changes, skipping snapshot
+exit=2
+== try 2
+yolo: snapshot 1
+exit=0
+== try 3
+yolo: snapshot 2
+exit=0
+-- files through YoloFS:
+b.txt
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+-- journal:
+S|/home/stawiah/ccS|/home/stawiah/cc-exp/e4/b.txt|2|a
+P|after sh -c echo b > b.txt
+S|/home/stawiah/cc-exp/e4/b.txt|3|s:2
+P|after sh -c echo b > b.txt
+[end of journal]
+-- store:
+.yolofs/inodes/0/1
+.yolofs/inodes/0/3
+.yolofs/inodes/0/2

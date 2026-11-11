@@ -38,7 +38,7 @@ strace -f -e trace=renameat,renameat2,unlinkat \
 
 `when=2` kills the process as it enters its second rename, so the first rename completes and the second never runs. This models the commit process dying rather than a power loss, which is sufficient here because the failures come from the order of the commit steps, not from unflushed data. Recovery is then exercised with `yolo unmount` and `yolo mount`, which replays the journal.
 
-For failures that depend on data still in memory, the crash is a kernel panic at a fixed point in the kernel module. The injection points are in `kmod/staging.c` and are selected with the module parameter `fi_point`, which is 0 (off) by default:
+For failures that depend on data still in memory, the crash is a kernel panic at a fixed point in the kernel module. The injection points are in `kmod/staging.c` and `kmod/journal.c` and are selected with the module parameter `fi_point`, which is 0 (off) by default:
 
 ```bash
 echo 1 | sudo tee /sys/module/yolofs/parameters/fi_point
@@ -47,8 +47,9 @@ echo 1 | sudo tee /sys/module/yolofs/parameters/fi_point
 | `fi_point` | Location | Action |
 |------------|----------|--------|
 | 1 | `yolo_do_cow()`, after the record for a copy into the store is appended | fsync the journal only, then `panic()` |
+| 2 | `journal_write()`, on the next S record | write the first half of the record only, fsync the journal, then `panic()` |
 
-Forcing only the journal to disk produces an order that Ext4 is allowed to produce on its own, but makes it happen every time. The virtual machine reboots after the panic (`kernel.panic=10`), and a second script inspects the journal, the store and the project.
+For point 1, forcing only the journal to disk produces an order that Ext4 is allowed to produce on its own, but makes it happen every time. The virtual machine reboots after the panic (`kernel.panic=10`), and a second script inspects the journal, the store and the project.
 
 ## Experiments
 
@@ -57,7 +58,7 @@ Forcing only the journal to disk produces an order that Ext4 is allowed to produ
 | E1 | Crash inside a rename during commit | [e1_commit_crash.sh](scripts/e1_commit_crash.sh) | [e1_output.txt](results/e1_output.txt) |
 | E2 | Crash between two staged files during commit | [e2_commit_crash.sh](scripts/e2_commit_crash.sh) | [e2_output.txt](results/e2_output.txt) |
 | E3 | Journal record on disk without its store data | [e3_before_crash.sh](scripts/e3_before_crash.sh), [e3_after_reboot.sh](scripts/e3_after_reboot.sh) | [before](results/e3_before_output.txt), [after reboot](results/e3_after_output.txt), [commit](results/e3_commit_output.txt) |
-| E4 | Torn journal record | | |
+| E4 | Torn journal record | [e4_before_crash.sh](scripts/e4_before_crash.sh), [e4_after_reboot.sh](scripts/e4_after_reboot.sh) | [before](results/e4_before_output.txt), [after reboot](results/e4_after_output.txt), [retry](results/e4_retry_output.txt), [retries in one mount](results/e4_retry2_output.txt), [travel and commit](results/e4_final_output.txt) |
 
 ### Running
 
@@ -106,12 +107,29 @@ The base `main.c` holds three lines (51 bytes) and the journal is empty. The age
 | `main.c` through YoloFS | empty |
 | `yolo commit` | succeeds; the real `main.c` is now 0 bytes |
 
+### E4: torn journal record
+
+The base `main.c` holds three lines (51 bytes) and the journal is empty. The agent creates `a.txt`. Injection point 2 writes only the first half of its record, with no newline, fsyncs the journal and panics. The follow-up steps run in the same project without another crash.
+
+| Check | Result |
+|-------|--------|
+| Journal after reboot | ends in the torn record `S|/home/stawiah/cc`, with no newline |
+| Remount | succeeds; `a.txt` is gone |
+| First create after each mount | fails with "File exists" for a file that does not exist |
+| Second create in the same mount | succeeds, and its record is written on the same line as the torn record |
+| Later write to the same file | its record is on its own line and refers to the lost one |
+| Travel to snapshot 1 | succeeds, but shows no `b.txt`, although `b.txt` was created in that step |
+| Commit | succeeds; `b.txt` reaches the project, `main.c` is unchanged at 51 bytes |
+
+The create failures come from inode numbers being reused. Creating `a.txt` left store file 1 on disk while its record was torn. After every mount the inode counter is rebuilt from the readable journal records only, so the first new file again gets number 1, and Linux refuses to create a file that already exists. A commit with nothing to commit does not clear the store, so this repeats after every mount until a commit or abort with changes.
+
 ### Summary
 
-| | Data lost | Error reported |
-|---|-----------|----------------|
+| | User data lost | Error reported |
+|---|----------------|----------------|
 | E1 | `old.h`, deleted by the retry | mount fails |
 | E2 | the original `b.c` | mount fails |
 | E3 | the original `main.c` | none |
+| E4 | none | misleading "File exists" on the first create after each mount |
 
-All three leave the user's files in a state that matches neither the old version nor the new one, and all three lose data. In E3 every step reports success.
+E1, E2 and E3 leave the user's files in a state that matches neither the old version nor the new one, and all three lose user data. In E3 every step reports success. E4 does not touch user data, but it silently drops a change from the snapshot history and repeatedly fails the first create after each mount.

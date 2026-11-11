@@ -1,0 +1,72 @@
+yolo: loading kernel module /lib/modules/6.8.0-147-generic/extra/yolofs.ko
+== fi_point after reboot
+0
+== real project files
+total 28
+-rw-rw-r-- 1 stawiah stawiah 2189 Nov 11 21:52 CLAUDE.md
+-rw-rw-r-- 1 stawiah stawiah   51 Nov 11 21:52 main.c
+-rw-rw-r-- 1 stawiah stawiah 1276 Nov 11 21:52 yolofs.toml
+== base main.c
+line 1 of main.c
+line 2 of main.c
+line 3 of main.c
+size: 51 bytes
+== JOURNAL AFTER THE CRASH
+-- journal (| marks a field separator):
+S|/home/stawiah/cc[end of journal]
+-- last bytes of the journal:
+0000000   /   h   o   m   e   /   s   t   a   w   i   a   h   /   c   c
+0000020
+== MOUNT (replays the journal)
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: run `yolo watch` to answer permission prompts
+mount exit=0
+-- files through YoloFS:
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+== AGENT: create b.txt, then rename it to c.txt
+sh: 1: cannot create b.txt: File exists
+yolo: no changes, skipping snapshot
+-- files through YoloFS:
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+-- journal (| marks a field separator):
+S|/home/stawiah/cc[end of journal]
+-- last bytes of the journal:
+0000000   /   h   o   m   e   /   s   t   a   w   i   a   h   /   c   c
+0000020
+== RESTART: unmount + mount (replays the journal again)
+yolo: unmounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: run `yolo watch` to answer permission prompts
+mount exit=0
+-- files through YoloFS:
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+== COMMIT
+yolo: nothing to commit
+commit exit=0
+== REAL PROJECT AFTER COMMIT
+total 28
+-rw-rw-r-- 1 stawiah stawiah 2189 Nov 11 21:52 CLAUDE.md
+-rw-rw-r-- 1 stawiah stawiah   51 Nov 11 21:52 main.c
+-rw-rw-r-- 1 stawiah stawiah 1276 Nov 11 21:52 yolofs.toml
+-- main.c:
+line 1 of main.c
+line 2 of main.c
+line 3 of main.c
+size: 51 bytes
+-- c.txt:
+MISSING

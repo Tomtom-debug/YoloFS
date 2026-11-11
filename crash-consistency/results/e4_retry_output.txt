@@ -1,0 +1,41 @@
+== store files (orphan from the crash)
+-rw-rw-r-- 1 stawiah stawiah 0 Nov 11 21:52 .yolofs/inodes/0/1
+== AGENT RETRY: create b.txt, then rename to c.txt
+sh: 1: cannot create b.txt: File exists
+yolo: no changes, skipping snapshot
+run exit=2
+-- files through YoloFS:
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+-- journal:
+S|/home/stawiah/cc[end of journal]
+== RESTART
+yolo: unmounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: applying 12 rules from yolofs.toml
+yolo: skipping rule $HOME/.ssh/id_ed25519 = ask: rule path does not exist: /home/stawiah/.ssh/id_ed25519: No such file or directory (os error 2)
+yolo: skipping rule /lib64 = read-only: rule path does not exist: /lib64: No such file or directory (os error 2)
+yolo: mounted /home/stawiah/cc-exp/e4/.yolofs/mnt
+yolo: run `yolo watch` to answer permission prompts
+mount exit=0
+-- files through YoloFS:
+CLAUDE.md
+main.c
+yolofs.toml
+yolo: no changes, skipping snapshot
+== COMMIT
+yolo: nothing to commit
+commit exit=0
+== REAL PROJECT
+total 28
+-rw-rw-r-- 1 stawiah stawiah 2189 Nov 11 21:52 CLAUDE.md
+-rw-rw-r-- 1 stawiah stawiah   51 Nov 11 21:52 main.c
+-rw-rw-r-- 1 stawiah stawiah 1276 Nov 11 21:52 yolofs.toml
+-- main.c:
+line 1 of main.c
+line 2 of main.c
+line 3 of main.c
+size: 51 bytes
+-- c.txt:
+MISSING
